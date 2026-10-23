@@ -1,0 +1,496 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tropical Ants v5.7 — Emma Renier</title><style>body{margin:0;background:#111b27;color:#f5f2e8;font:15px system-ui}main{max-width:1150px;margin:auto;padding:18px}h1{margin:0 0 12px}section{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:12px}label{display:flex;gap:7px;align-items:center}select,button,input{accent-color:#f4bc63}button,select{padding:9px;border:1px solid #75808c;border-radius:8px;background:#26384b;color:white}button{cursor:pointer}canvas{width:100%;height:auto;display:block;background:#ffffff;border-radius:8px}small{color:#b8c9d6}</style></head><body><main><h1>🌴 Tropical Ants</h1><section><label>Stijl <select id="style"><option value="real">Zacht realistisch</option><option value="expr">Expressionistisch</option><option value="cubist" selected>Picasso — nieuw proefatelier</option></select></label><label id="cubism-control" style="display:none">Kubistische intensiteit <select id="cubism"><option value="1">Analytisch</option><option value="2" selected>Gefragmenteerd</option><option value="3">Radicaal</option></select></label><label>Moment <select id="time"><option value="day">Heldere middagzon</option></select></label><label>Palmen <input id="palms" type="range" min="1" max="6" value="3"><output id="pout">3</output></label><label>Strandleven <select id="crowd"><option value="quiet">Rustig</option><option value="normal" selected>Gezellig</option><option value="busy">Druk</option></select></label><label>Mensen in zee <input id="swimmers" type="range" min="0" max="20" step="1" value="6"><output id="swout">6</output></label><label>Stappen/seconde <input id="speed" type="range" min="3000" max="50000" step="1000" value="30000"><output id="sout">30000</output></label></section><section id="original-actions"><button id="start">▶ Schilder</button><button id="pause">⏸ Pauze</button><button id="new">↻ Nieuwe compositie</button><button id="save">↓ PNG</button><span id="status">Klaar voor vertrek</span></section><div id="original-canvas-wrap" style="position:relative;width:min(100%,780px)"><canvas id="c" width="1000" height="1000"></canvas><canvas id="ants" width="1000" height="1000" style="position:absolute;inset:0;pointer-events:none;background:transparent"></canvas></div><div id='picasso-wrap' style='display:none;width:min(100%,950px)'><iframe id='picasso-frame' title='Picasso kubistische schildermotor' style='width:100%;height:920px;border:0;border-radius:12px;background:#171b26' loading='eager'></iframe></div><section id="original-ants-control"><label><input type="checkbox" id="showants" checked> Toon de vier schilderbolletjes</label><span id="progress">0%</span></section><p><small>Stijlen: zacht realistisch, expressionistisch en Picasso-geïnspireerd puur kubisme. Kubisme gebruikt hoekige, verschoven gezichtspunten en gefragmenteerde vormen, door de vier CMYK-bolletjes opgebouwd. By Teekay & Omnia 2026</small></p></main><script>
+const c=document.getElementById('c'),ctx=c.getContext('2d'),$=id=>document.getElementById(id);let layers=[],layer=0,done=0,running=false,raf=0,seed=1,scene,painted=0,totalMarks=1;const ac=document.getElementById('ants'),ax=ac.getContext('2d');let antPos=Array.from({length:4},()=>({x:500,y:500,a:0}));
+function rand(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296}function rr(a,b){return a+(b-a)*rand()}function pick(a){return a[Math.floor(rand()*a.length)]}function mix(a,b,t){return a.map((v,i)=>Math.round(v+(b[i]-v)*t))}function rgb(a,alpha=1){return `rgba(${a.map(v=>Math.max(0,Math.min(255,Math.round(v)))).join(',')},${alpha})`}function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function palette(){let t=$('time').value;t='day';let p={day:{top:[47,145,216],mid:[142,210,238],low:[181,226,242],sea:[17,144,171],sand:[239,207,148],sun:[255,245,180]},sunset:{top:[80,67,153],mid:[245,119,112],low:[255,198,112],sea:[59,95,143],sand:[215,151,112],sun:[255,219,121]},dusk:{top:[31,39,99],mid:[160,79,135],low:[246,139,105],sea:[39,67,110],sand:[158,112,125],sun:[255,173,119]}}[t];return p}
+function palm(x,y,h,lean){
+ let trunk=[],leaves=[];const bend=lean*h,topX=x+bend,topY=y-h;
+ // Stam met organische kromming en een onregelmatige, vezelige textuur.
+ for(let i=0;i<420;i++){let t=rand(),yy=y-h*t,xx=x+bend*(.22*t+.78*t*t)+Math.sin(t*5.2)*h*.006;
+ let width=(1-t)*h*.048+4;trunk.push({x:xx+rr(-width*.5,width*.5),y:yy+rr(-3,3),w:rr(2,Math.max(3,width*.55)),a:rr(-.55,.55),t});}
+ // Palmveren met neerhangende uiteinden en afzonderlijke smalle blaadjes.
+ const fronds=8+Math.floor(rand()*4);
+ for(let j=0;j<fronds;j++){let angle=j*Math.PI*2/fronds+rr(-.28,.28),len=h*rr(.28,.46),droop=rr(.09,.19)*h;
+ const dx=Math.cos(angle)*len,dy=Math.sin(angle)*len*.34;
+ for(let k=0;k<140;k++){let t=rand(),px=topX+dx*t,py=topY+dy*t-24*Math.sin(Math.PI*t)+droop*t*t;
+ let spread=Math.sin(Math.PI*t)*h*.105,side=rand()<.5?-1:1;
+ let vx=-Math.sin(angle)*spread*side,vy=Math.cos(angle)*spread*.32*side+spread*.55;
+ leaves.push({x:px+rr(-3,3),y:py+rr(-3,3),ex:px+vx,ey:py+vy,a:angle,w:rr(1.1,3.6),shade:rand(),type:'leaf'});
+ }
+ }
+ return {trunk,leaves};}
+function buildPureAbstract(){
+ const W=1000,H=1000;
+ const palette=[[20,77,151],[28,166,197],[245,195,58],[227,83,91],[240,229,192],[40,48,67],[125,77,145],[47,137,105],[235,128,64]];
+ const batches=[[],[],[],[],[]];
+ const polygons=[];
+ for(let i=0;i<145;i++){
+  let x=rr(-100,1050),y=rr(-100,1050),size=rr(55,320),sides=Math.floor(rr(3,7)),rot=rr(0,6.28),col=pick(palette);
+  let pts=[];for(let k=0;k<sides;k++){let a=rot+k*Math.PI*2/sides;pts.push([x+Math.cos(a)*size*rr(.5,1.2),y+Math.sin(a)*size*rr(.5,1.2)])}
+  polygons.push({pts,col});
+ }
+ // Every shape is built from distributed painterly marks, never drawn as a completed object.
+ for(let i=0;i<115000;i++){
+  let poly=pick(polygons),pts=poly.pts,x=rr(-50,1050),y=rr(-50,1050),inside=false;
+  for(let a=0,b=pts.length-1;a<pts.length;b=a++){
+   const xi=pts[a][0],yi=pts[a][1],xj=pts[b][0],yj=pts[b][1];
+   if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)inside=!inside;
+  }
+  if(!inside)continue;
+  const color=mix(poly.col,pick(palette),rr(0,.16));
+  batches[Math.floor(rr(0,5))].push({x,y,color,w:rr(7,40),a:rr(-3.14,3.14),abstractMark:true});
+ }
+ for(let i=0;i<18000;i++){
+  const x=rr(0,1000),y=rr(0,1000);
+  batches[Math.floor(rr(0,5))].push({x,y,color:pick(palette),w:rr(2,18),a:rr(-3.14,3.14),abstractMark:true});
+ }
+ layers=batches.map(shuffleMarks);layer=0;done=0;painted=0;totalMarks=layers.reduce((n,a)=>n+a.length,0);running=false;
+ scene={style:'abstract'};ax.clearRect(0,0,1000,1000);$('status').textContent='Pure abstractie klaar — druk op Schilder';
+}
+
+// Onafhankelijke kubistische compositie: geen realistische ondertekening.
+function buildPicasso(){
+ cancelAnimationFrame(raf);seed=(Math.random()*4294967295)>>>0;ctx.clearRect(0,0,1000,1000);
+ const intensity=+$('cubism').value, ink=[34,37,48], ochre=[[218,171,102],[241,210,150],[171,113,78],[232,192,128]], ocean=[[39,90,123],[69,130,145],[124,169,162],[32,66,107]], foliage=[[42,89,79],[100,132,91],[166,157,92]], accents=[[184,66,57],[227,122,77],[239,204,117],[80,104,157]], flesh=[[231,175,121],[165,96,74],[197,133,94],[113,75,70]];
+ const B=[[],[],[],[],[]];
+ function poly(points,color,layer=0){
+   // The image is constructed from solid interlocking planes, never dots or brush marks.
+   const cx=points.reduce((n,p)=>n+p[0],0)/points.length,cy=points.reduce((n,p)=>n+p[1],0)/points.length;
+   const sections=12+intensity*7;
+   for(let k=0;k<points.length;k++){
+     const v=points[k],w=points[(k+1)%points.length];
+     for(let j=0;j<sections;j++){
+       let t=j/sections,u=(j+1)/sections;
+       B[layer].push({type:'facet',points:[[cx,cy],[v[0]+(w[0]-v[0])*t,v[1]+(w[1]-v[1])*t],[v[0]+(w[0]-v[0])*u,v[1]+(w[1]-v[1])*u]],color,alpha:1,outline:false});
+     }
+   }
+   for(let k=0;k<points.length;k++){
+     let v=points[k],w=points[(k+1)%points.length];
+     B[Math.min(layer+1,4)].push({type:'slash',x:v[0],y:v[1],ex:w[0],ey:w[1],color:ink,w:intensity===3?3.5:2.5});
+   }
+ }
+ // A deliberately flattened, overlapping collage: no horizon, no perspective gradient.
+ poly([[0,0],[580,0],[370,350],[0,490]], [203,186,143]);
+ poly([[580,0],[1000,0],[1000,510],[710,420],[370,350]], [67,109,134]);
+ poly([[0,490],[370,350],[710,420],[1000,510],[1000,760],[0,705]],[62,124,142]);
+ poly([[0,705],[440,650],[770,770],[1000,760],[1000,1000],[0,1000]],[225,188,126]);
+ const blocks=18+intensity*9;
+ for(let i=0;i<blocks;i++){
+   const x=rr(-80,930),y=rr(-50,950),w=rr(100,340),h=rr(80,270);
+   const pal=y<400?ocean.concat(ochre):y<720?ocean.concat(foliage):ochre.concat(accents);
+   poly([[x,y],[x+w*rr(.5,1),y+rr(-45,35)],[x+w,y+h*.5],[x+w*.5,y+h],[x-rr(0,55),y+h*.6]],pick(pal),1);
+ }
+ // Sun is a displaced multi-viewpoint construction, not a naturalistic disk.
+ const sx=rr(190,730),sy=rr(120,270);
+ poly([[sx-70,sy-25],[sx-18,sy-100],[sx+77,sy-62],[sx+104,sy+30],[sx+15,sy+90],[sx-88,sy+55]],[242,203,115],2);
+ poly([[sx-68,sy-25],[sx+8,sy-74],[sx+18,sy+12],[sx-26,sy+85]],[199,115,68],2);
+ poly([[sx+8,sy-74],[sx+77,sy-62],[sx+104,sy+30],[sx+18,sy+12]],[245,222,157],2);
+ // Palm trunks are zig-zag prisms; fronds are triangular cut-paper blades.
+ const palms=[];
+ for(let i=0;i<+$('palms').value;i++){
+   const x=rr(90,920),y=rr(820,1050),h=rr(245,410),tx=x+rr(-35,35),ty=y-h;
+   palms.push({x,y,tx,ty});
+   for(let j=0;j<4;j++){let t=j/4,u=(j+1)/4,xx=x+(tx-x)*t,yy=y-h*t,ex=x+(tx-x)*u+rr(-17,17),ey=y-h*u;
+     poly([[xx-17,yy],[xx+14,yy],[ex+11,ey],[ex-12,ey]],pick(ochre.concat([[58,67,61]])),2);}
+   for(let j=0;j<8;j++){let angle=j*Math.PI/4,reach=rr(80,155),dx=Math.cos(angle)*reach,dy=Math.sin(angle)*reach*.58;
+     poly([[tx-9,ty],[tx+9,ty-9],[tx+dx,ty+dy],[tx+dx*.55+rr(-18,18),ty+dy*.42+rr(10,32)]],pick(foliage),2);}
+ }
+ // Monumental multi-viewpoint bathers: face front and profile simultaneously.
+ function bather(x,y,scale,water){
+   let z=scale,top=y-165*z,skin=pick(flesh),other=pick(flesh);
+   poly([[x-49*z,top+27*z],[x-8*z,top-22*z],[x+35*z,top-11*z],[x+61*z,top+41*z],[x+6*z,top+91*z],[x-43*z,top+73*z]],skin,3);
+   poly([[x-49*z,top+27*z],[x-8*z,top-22*z],[x+2*z,top+81*z],[x-43*z,top+73*z]],other,3);
+   poly([[x+5*z,top+3*z],[x+35*z,top-11*z],[x+61*z,top+41*z],[x+20*z,top+52*z]],pick(ochre),3);
+   poly([[x-31*z,top+43*z],[x-11*z,top+35*z],[x-17*z,top+48*z]],ink,4);
+   poly([[x+16*z,top+25*z],[x+38*z,top+22*z],[x+25*z,top+37*z]],ink,4);
+   poly([[x+33*z,top+37*z],[x+75*z,top+53*z],[x+23*z,top+60*z]],other,4);
+   poly([[x-15*z,top+66*z],[x+28*z,top+58*z],[x+66*z,top+168*z],[x-58*z,top+176*z]],pick(accents),3);
+   poly([[x-50*z,top+88*z],[x-85*z,top+160*z],[x-51*z,top+176*z],[x-10*z,top+111*z]],skin,3);
+   if(!water){poly([[x-46*z,top+163*z],[x-8*z,top+163*z],[x-31*z,top+255*z],[x-67*z,top+249*z]],other,3);
+   poly([[x+8*z,top+163*z],[x+54*z,top+163*z],[x+83*z,top+252*z],[x+32*z,top+250*z]],skin,3);}
+ }
+ // A few large figures dominate instead of tiny impressionistic bathers.
+ const crowd=$('crowd').value==='busy'?5:$('crowd').value==='quiet'?2:3;
+ for(let i=0;i<crowd;i++){let x=135+i*(750/Math.max(1,crowd-1))+rr(-35,35),y=rr(835,950);bather(x,y,rr(.68,1.05),false)}
+ const swimmers=Math.min(+$('swimmers').value,9);
+ for(let i=0;i<swimmers;i++){bather(rr(70,930),rr(585,705),rr(.25,.45),true)}
+ // Strong striped parasols and skewed beach towels, built as intersecting planes.
+ for(let i=0;i<Math.max(2,Math.floor(crowd*.7));i++){
+   let x=rr(100,900),y=rr(795,930),r=rr(65,100);
+   poly([[x-r,y-r*.35],[x-10,y-r*1.45],[x+5,y-r*.25]],pick(accents),3);
+   poly([[x-10,y-r*1.45],[x+r,y-r*.4],[x+5,y-r*.25]],pick(ocean.concat(ochre)),3);
+   poly([[x-10,y-r*.25],[x+7,y-r*.25],[x+10,y+50],[x-6,y+50]],ink,3);
+   poly([[x-r,y+58],[x+r*.5,y+37],[x+r,y+88],[x-r*.6,y+104]],pick(accents),3);
+ }
+ layers=B.map(shuffleMarks);scene={style:'picasso'};layer=0;done=0;painted=0;totalMarks=layers.reduce((n,a)=>n+a.length,0);running=false;ax.clearRect(0,0,1000,1000);
+ $('status').textContent='Picasso-kubisme: geometrische vlakken — druk op Schilder';
+}
+
+const usedPoseKeys=new Set();
+function build(){usedPoseKeys.clear();if($('style').value==='cubist'){running=false;cancelAnimationFrame(raf);return;}cancelAnimationFrame(raf);if($('style').value==='abstract'){seed=(Math.random()*4294967295)>>>0;ctx.clearRect(0,0,1000,1000);buildPureAbstract();return;}seed=(Math.random()*4294967295)>>>0;ctx.clearRect(0,0,1000,1000);let p=palette(),horizon=rr(470,610),shore=rr(740,855),sunX=rr(220,780),sunY=rr(90,220),sunR=rr(37,66),style=$('style').value;scene={p,horizon,shore,sunX,sunY,sunR,style};let count=style==='real'?45000:style==='impr'?62000:style==='expr'?58000:style==='cubist'?47000:35000;let sky=[],sea=[],sand=[],sun=[],detail=[];for(let i=0;i<count;i++){let x=rr(0,1000),y=rr(0,horizon),t=y/horizon;let base=mix(t<.55?mix(p.top,p.mid,t/.55):mix(p.mid,p.low,(t-.55)/.45),[255,255,255],rr(0,.075));if(style==='expr'){let bands=[[26,77,193],[19,117,207],[15,166,219],[63,184,222],[128,213,239],[232,244,244],[38,93,173],[10,142,190]];let wave=Math.sin(x*.011+y*.018)+.55*Math.sin(x*.025-y*.013);let idx=Math.floor(clamp((t*.45+.27+wave*.14+rr(-.21,.21))*bands.length,0,bands.length-1));base=mix(bands[idx],base,rr(.05,.30));if(Math.hypot(x-sunX,y-sunY)<sunR*2.8&&rand()<.28)base=pick([[247,249,234],[200,234,239],[255,246,206]]);}sky.push({x,y,color:base,a:style==='expr'?rr(-.9,.9):0,w:style==='expr'?rr(13,42):0})}for(let i=0;i<Math.round(count*.65);i++){let x=rr(0,1000),y=rr(horizon,shore+(x-500)*.035),t=(y-horizon)/(shore-horizon),color=mix(p.sea,p.low,rr(0,.13));if(Math.abs(x-sunX)<(y-horizon)*.35+22&&rand()<.32)color=mix(color,p.sun,rr(.3,.85));if(style==='expr'){
+ // Eigen expressionistische zee: ritmische, krachtige horizontale verfstreken.
+ // De realistische zee en haar zonweerkaatsing blijven ongewijzigd.
+ const bands=[[12,62,139],[17,89,168],[12,126,178],[13,160,190],[17,111,132],[26,175,168],[54,194,200],[7,74,119],[86,210,205]];
+ const current=Math.sin(y*.035+x*.012)+.55*Math.sin(y*.077-x*.025);
+ let ix=Math.floor(clamp((.46+current*.19+rr(-.25,.25))*bands.length,0,bands.length-1));
+ color=bands[ix];
+ const inReflection=Math.abs(x-sunX)<(y-horizon)*.35+22;
+ if(inReflection&&rand()<.39)color=pick([[255,236,152],[247,249,220],[190,237,219],[255,210,110]]);
+ sea.push({x,y,color,w:rr(12,49),a:rr(-.16,.16),type:'expressionistSea'});
+ }else sea.push({x,y,color,w:rr(3,22)})}for(let i=0;i<Math.round(count*.55);i++){let x=rr(0,1000),edge=shore+(x-500)*.035,y=rr(edge,1000),t=(y-edge)/(1000-edge);let color=mix(p.sand,[125,87,70],rr(0,.22)*t);if(style==='expr'){const sandy=[[246,219,153],[255,233,178],[221,169,105],[193,137,87],[252,241,197],[214,188,146],[169,121,86]];let wave=Math.sin(x*.018+y*.024)+Math.sin(x*.041-y*.016)*.55;let ix=Math.floor(clamp((.5+wave*.17+rr(-.3,.3))*sandy.length,0,sandy.length-1));color=mix(sandy[ix],color,rr(.05,.25))}sand.push({x,y,color,w:style==='expr'?rr(12,42):rr(3,16),a:style==='expr'?rr(-.8,.8):0})}// Van Gogh-geïnspireerde middagzon: draaiende impasto-strepen en gouden kransen.
+for(let i=0;i<18500;i++){
+ let a=rr(0,Math.PI*2),r=Math.sqrt(rand())*sunR*2.35;
+ let inside=r<sunR*.73,halo=r>=sunR*.73;
+ let swirl=a+Math.sin(r*.11+a*3)*.21;
+ let x=sunX+Math.cos(a)*r,y=sunY+Math.sin(a)*r;
+ let color=inside?pick([[255,228,65],[255,198,35],[255,244,129],[255,171,32],[255,250,178]]):pick([[255,207,45],[255,232,91],[248,176,37],[251,242,154],[252,192,55]]);
+ sun.push({x,y,color,type:'sunbrush',a:swirl+Math.PI/2+rr(-.28,.28),w:inside?rr(5,15):rr(9,27),alpha:halo?rr(.08,.40)*Math.pow(Math.max(0,1-r/(sunR*2.35)),.65):rr(.52,.87)});
+}
+/* Tweede overschilderlaag op zee verwijderd: eerste zee met zonreflectie blijft zichtbaar. */let palms=[];for(let i=0;i<+$('palms').value;i++){let x=rr(-70,1070),y=rr(790,1130),h=rr(220,490)*(y/1050),lean=rr(-.085,.085);palms.push(palm(x,y,h,lean))}// Strandgangers, handdoeken en parasols: ieder object wordt opgebouwd uit mierenstreken.
+let life=[],shadows=[];const nPeople= $('crowd').value==='quiet'?4:$('crowd').value==='busy'?19:10;
+const towelColors=[[223,64,75],[41,153,198],[249,208,65],[92,173,112],[164,98,180],[240,134,63]];
+// Projectie vanuit dezelfde hoge zon voor alle objecten.
+// Schaduwen starten bij het contactpunt met het zand, niet naast het object.
+const lightDirX=(500-sunX)/Math.max(260,1000-sunY);
+const shadowDX=lightDirX*0.62, shadowDY=0.23;
+function shadowMark(x,y,alpha=.18,w=4){
+ if(x<0||x>1000||y<shore+(x-500)*.035+3||y>999)return;
+ shadows.push({type:'shadow',x,y,ex:x+rr(-3,3),ey:y+rr(-2,2),alpha,w});
+}
+function groundShadow(x,y,rx,ry,alpha=.24,height=0){
+ // Klein contactvlak, verschuiving volgens hoogte van het voorwerp.
+ const dx=height*shadowDX,dy=height*shadowDY;
+ const steps=Math.max(85,Math.round(rx*ry*.7));
+ for(let k=0;k<steps;k++){
+  const a=rr(0,Math.PI*2),rad=Math.sqrt(rand());
+  const px=x+dx+Math.cos(a)*rx*rad,py=y+dy+Math.sin(a)*ry*rad;
+  shadowMark(px,py,alpha*(1-rad*.7),rr(2,6));
+ }
+}
+for(const tree of palms){
+ const foot=tree.trunk.reduce((best,v)=>!best||v.t<best.t?v:best,null);
+ const bx=foot?.x??500,by=foot?.y??950;
+ // Stamprojectie: van voet naar de schaduw van de kruin.
+ const top=tree.trunk.reduce((best,v)=>!best||v.t>best.t?v:best,null)||foot;
+ groundShadow(bx,by,13,5,.32,0);
+ const ht=Math.max(40,by-top.y);
+ for(let j=0;j<=40;j++){
+  const t=j/40,px=bx+(top.x-bx)*t+ht*t*shadowDX;
+  const py=by+ht*t*shadowDY;
+  groundShadow(px,py,rr(3,7),rr(2,4),.26,0);
+ }
+ // Palmveren vanuit dezelfde geprojecteerde kruin, niet willekeurig verspreid.
+ const cx=top.x+ht*shadowDX,cy=by+ht*shadowDY;
+ for(let k=0;k<9;k++){
+  const a=k*Math.PI*2/9,reach=rr(22,68);
+  for(let t=.08;t<1;t+=.08){
+   groundShadow(cx+Math.cos(a)*reach*t,cy+Math.sin(a)*reach*.28*t,
+     rr(4,9)*(1-t*.6),rr(2,4),.12,0);
+  }
+ }
+}
+function stroke(x,y,ex,ey,color,w){life.push({type:'life',x,y,ex,ey,color,w})}
+function line(x,y,ex,ey,color,w,n=12){for(let z=0;z<n;z++){let t=rand(),u=Math.min(1,t+rr(.08,.22));stroke(x+(ex-x)*t,y+(ey-y)*t,x+(ex-x)*u,y+(ey-y)*u,color,w)}}
+// Eenmalige houdingen per schilderij: geen identieke pose-combinaties.
+function uniquePose(){
+ // Elke anatomische houding maar eenmaal; spiegelen telt niet als nieuwe houding.
+ const types=['lying','sitting','standing','walking'];
+ const variants={lying:5,sitting:4,standing:4,walking:4};
+ const choices=[];
+ for(const type of types)for(let variant=0;variant<variants[type];variant++){
+  const key=`${type}-${variant}`;
+  if(!usedPoseKeys.has(key))choices.push({type,variant,flip:rand()<.5?-1:1,key});
+ }
+ return choices.length?pick(choices):null;
+}
+function person(x,y,sc,pose,variant=0,flip=1){
+ const skin=pick([[79,48,36],[121,74,49],[171,105,70],[210,151,107],[239,191,147],[103,67,48]]),swim=pick(towelColors),hair=pick([[33,29,27],[82,48,32],[181,132,70],[58,47,42]]);
+ const skinLight=mix(skin,[255,231,197],.17),skinShade=mix(skin,[65,47,40],.18);
+ const dot=(cx,cy,rx,ry,col,n=35)=>{for(let k=0;k<n;k++){let a=rr(0,Math.PI*2),r=Math.sqrt(rand());let px=cx+Math.cos(a)*rx*r,py=cy+Math.sin(a)*ry*r;stroke(px,py,px+rr(-2,3)*sc,py+rr(-2,2)*sc,col,rr(1.8,3.4)*sc)}};
+ const limb=(x1,y1,x2,y2,col,w)=>line(x1,y1,x2,y2,col,w*sc,28);
+ if(pose==='lying'){
+  // V4.6: vijf varianten, gespiegeld; hoofd en lichaam liggen op dezelfde zandhoogte.
+  const X=v=>x+flip*v*sc, Y=v=>y+v*sc;
+  dot(X(-24),Y(-4),7*sc,6*sc,skin);dot(X(-26),Y(-8),6*sc,2.5*sc,hair,17);
+  limb(X(-15),Y(-3),X(9),Y(-3),skin,10);
+  limb(X(-7),Y(-4),X(7),Y(-4),swim,10);
+  if(variant===0){ // op rug
+   limb(X(9),Y(-4),X(30),Y(-8),skin,4);limb(X(9),Y(1),X(32),Y(5),skin,4);
+   limb(X(-10),Y(-3),X(0),Y(7),skin,3);
+  }else if(variant===1){ // op buik, armen naast hoofd
+   limb(X(9),Y(-4),X(31),Y(-2),skin,4);limb(X(9),Y(1),X(29),Y(8),skin,4);
+   limb(X(-12),Y(-3),X(-28),Y(7),skin,3);
+  }else if(variant===2){ // zijligging met gebogen knieën
+   limb(X(9),Y(-4),X(22),Y(5),skin,4);limb(X(22),Y(5),X(28),Y(-2),skin,4);
+   limb(X(8),Y(1),X(19),Y(9),skin,4);limb(X(19),Y(9),X(29),Y(7),skin,4);
+  }else if(variant===3){ // op ellebogen
+   limb(X(-9),Y(-5),X(-15),Y(8),skin,4);limb(X(-15),Y(8),X(-26),Y(7),skin,3);
+   limb(X(9),Y(-4),X(29),Y(-7),skin,4);limb(X(9),Y(1),X(30),Y(4),skin,4);
+  }else{ // één knie opgetrokken
+   limb(X(9),Y(-4),X(20),Y(-13),skin,4);limb(X(20),Y(-13),X(30),Y(2),skin,4);
+   limb(X(9),Y(1),X(32),Y(5),skin,4);limb(X(-9),Y(-3),X(-2),Y(7),skin,3);
+  }
+ }else if(pose==='sitting'){
+  // Natuurlijke zijaanzichten; nooit symmetrisch gespreide benen.
+  const X=v=>x+flip*v*sc,Y=v=>y+v*sc;
+  const lean=[-3,6,-9,10][variant];
+  dot(X(lean*.35),Y(-35),5.5*sc,6.5*sc,skin,43);
+  dot(X(lean*.35-1),Y(-40),5.7*sc,2.4*sc,hair,17);
+  limb(X(lean*.2),Y(-28),X(lean),Y(-10),swim,9);
+  // Armen rusten op zand, knie of achter het lichaam.
+  if(variant===0){ // zijwaarts met één knie opgetrokken
+   limb(X(-3),Y(-23),X(11),Y(-9),skin,3);
+   limb(X(lean),Y(-10),X(14),Y(-19),skin,5);
+   limb(X(14),Y(-19),X(24),Y(0),skin,4);
+   limb(X(lean+2),Y(-10),X(18),Y(1),skin,5);
+   limb(X(18),Y(1),X(33),Y(3),skin,4);
+  }else if(variant===1){ // beide knieën gebogen naar dezelfde kant
+   limb(X(-3),Y(-22),X(-13),Y(-2),skin,3);
+   limb(X(lean),Y(-10),X(16),Y(-5),skin,5);
+   limb(X(16),Y(-5),X(24),Y(8),skin,4);
+   limb(X(lean+2),Y(-9),X(19),Y(-1),skin,5);
+   limb(X(19),Y(-1),X(30),Y(7),skin,4);
+  }else if(variant===2){ // zittend op de hielen
+   limb(X(-5),Y(-25),X(1),Y(-10),skin,3);
+   limb(X(lean),Y(-10),X(11),Y(-2),skin,5);
+   limb(X(11),Y(-2),X(4),Y(7),skin,4);
+   limb(X(lean+3),Y(-9),X(15),Y(0),skin,5);
+   limb(X(15),Y(0),X(8),Y(7),skin,4);
+  }else{ // ontspannen, op één arm steunend, benen naar rechts
+   limb(X(lean-2),Y(-25),X(-17),Y(-5),skin,3);
+   limb(X(-17),Y(-5),X(-22),Y(7),skin,3);
+   limb(X(lean),Y(-10),X(19),Y(-2),skin,5);
+   limb(X(19),Y(-2),X(37),Y(3),skin,4);
+   limb(X(lean+2),Y(-9),X(16),Y(4),skin,5);
+   limb(X(16),Y(4),X(29),Y(8),skin,4);
+  }
+ }else{
+  dot(x,y-43*sc,5.6*sc,7.1*sc,skin);dot(x,y-49*sc,5.4*sc,2.5*sc,hair,18);
+  limb(x,y-34*sc,x,y-15*sc,swim,11);
+  limb(x-5*sc,y-30*sc,x-14*sc,y-13*sc,skin,3.8);limb(x+5*sc,y-30*sc,x+14*sc,y-14*sc,skin,3.8);
+  limb(x-3*sc,y-15*sc,x-8*sc,y+7*sc,skin,4.5);limb(x+3*sc,y-15*sc,x+9*sc,y+7*sc,skin,4.5);
+  if(pose==='walking'){limb(x-3*sc,y-15*sc,x-(10+variant*3)*sc*flip,y+7*sc,skin,4.5);limb(x+3*sc,y-15*sc,x+(12+variant*2)*sc*flip,y+3*sc,skin,4.5)}
+  dot(x-2*sc,y-24*sc,2.4*sc,6*sc,skinShade,12);
+  dot(x+2*sc,y-29*sc,2*sc,5*sc,skinLight,10);
+  if(variant===1)limb(x+5*sc,y-30*sc,x+flip*18*sc,y-42*sc,skin,3.8);
+  if(variant===2)limb(x-5*sc,y-30*sc,x-flip*20*sc,y-23*sc,skin,3.8);
+ }
+}
+// Strandgroepjes uitsluitend op droog zand, buiten de palmstammen en hun kronen.
+// Geen geforceerde plaatsing als er onvoldoende vrije ruimte is.
+const occupied=[];
+// V3.6: bescherm de volledige zichtbare palm (stam EN alle palmveren).
+// De vorige controle keek enkel naar de onderste stam: daardoor konden mensen
+// alsnog in de kruin verschijnen. Alle onderdelen worden vooraf getest.
+// Alleen de delen van de palm die het droge zand raken blokkeren strandobjecten.
+// Een kruin boven zee mag niet het volledige zandstrand onbruikbaar maken.
+const palmZones=palms.map(tree=>{
+ const marks=[...tree.trunk,...tree.leaves].filter(v=>Math.max(v.y,v.ey??v.y)>shore+12);
+ if(!marks.length)return null;
+ const xs=marks.flatMap(v=>[v.x,v.ex??v.x]);
+ const ys=marks.flatMap(v=>[v.y,v.ey??v.y]);
+ return {minX:Math.min(...xs)-30,maxX:Math.max(...xs)+30,
+         minY:Math.max(shore+12,Math.min(...ys)-22),maxY:Math.max(...ys)+22};
+}).filter(Boolean);
+for(let i=0;i<nPeople;i++){
+ let x,y,sc,found=false;
+ for(let attempt=0;attempt<650;attempt++){
+  let cx=rr(80,920),cy=rr(Math.max(shore+70,740),965);
+  let scale=.72+(cy-shore)/(1000-shore)*.9;
+  // Inclusief volledige handdoek, parasol en menselijke figuur.
+  const radius=(i<4 ? 65 : 39)*scale;
+  const minX=cx-radius,maxX=cx+radius,minY=cy-radius*1.20,maxY=cy+radius*.75;
+  const shoreline=shore+(cx-500)*.035;
+  if(minX<10||maxX>990||minY<shoreline+18||maxY>995)continue;
+  if(palmZones.some(z=>minX<z.maxX&&maxX>z.minX&&minY<z.maxY&&maxY>z.minY))continue;
+  if(occupied.some(o=>Math.hypot(cx-o.x,cy-o.y)<radius+o.radius+5))continue;
+  x=cx;y=cy;sc=scale;occupied.push({x,y,radius});found=true;break;
+ }
+ if(!found)continue;
+ const selected=uniquePose();if(!selected)continue;let pose=selected.type;
+ usedPoseKeys.add(selected.key);groundShadow(x,pose==='lying'?y+2*sc:y+7*sc,pose==='lying'?27*sc:11*sc,pose==='lying'?4*sc:5*sc,.28,0);
+ if(i%2===0 || i<3){
+  // Een duidelijke rechthoekige handdoek in perspectief, met gestreepte stof.
+  let tw=rr(57,77)*sc,th=rr(24,35)*sc,col=pick(towelColors),cx=x,cy=y+11*sc;
+  for(let k=0;k<230;k++){let u=rr(-.5,.5),v=rr(-.5,.5),xx=cx+u*tw+v*tw*.24,yy=cy+v*th;
+   let stripe=Math.floor((u+.5)*7)%2===0;stroke(xx,yy,xx+rr(2,7)*sc,yy+rr(-1,1)*sc,stripe?col:[248,237,204],rr(2,4)*sc)}
+ }
+ if(i<4 || i%3===0){
+  // Klassieke ronde strandparasol met brede afwisselende kleurbanen.
+  // Alle onderdelen blijven losse schilderstreken voor de mierenmotor.
+  let ux=x+rr(-16,16)*sc,uy=y-rr(35,43)*sc,rad=rr(31,39)*sc;
+  const tilt=rr(-.13,.13), canopyY=uy-10*sc;
+  const pairs=[[[235,69,63],[250,239,204]],[[45,137,197],[248,242,216]],[[235,174,59],[251,245,220]],[[58,156,122],[247,234,202]]];
+  const stripes=pick(pairs),panels=8;
+  // Steel vanaf het zand tot onder de koepel, met subtiele schaduw.
+  line(ux+tilt*rad,canopyY+5*sc,ux+tilt*rad+5*sc,y+8*sc,[103,82,64],2.8*sc,85);
+  groundShadow(ux+tilt*rad+7*sc,y+10*sc,rad*.85,rad*.17,.17,10*sc);
+  // Koepel in perspectief: bovenkant zichtbaar, afgeronde omtrek.
+  for(let k=0;k<950;k++){
+   const dx=rr(-1,1),dy=rr(-1,1);
+   if(dx*dx+dy*dy>1)continue;
+   const angle=Math.atan2(dy,dx)+Math.PI;
+   const panel=Math.floor(angle/(2*Math.PI)*panels)%panels;
+   const shade=rr(-.10,.10)+dy*.09;
+   const col=mix(stripes[panel%2],[102,87,75],Math.max(0,shade));
+   const xx=ux+dx*rad+tilt*dy*rad,yy=canopyY+dy*rad*.43;
+   stroke(xx,yy,xx+rr(-3,3)*sc,yy+rr(-2,2)*sc,col,rr(2,4.5)*sc);
+  }
+  // Baleinen en geschilderde rand; geen harde computergetekende schijf.
+  for(let j=0;j<panels;j++){
+   const a=j*Math.PI*2/panels;
+   const ex=ux+Math.cos(a)*rad+tilt*Math.sin(a)*rad;
+   const ey=canopyY+Math.sin(a)*rad*.43;
+   line(ux,canopyY,ex,ey,[112,93,77],.85*sc,12);
+  }
+  for(let j=0;j<120;j++){
+   const a=rr(0,Math.PI*2);
+   stroke(ux+Math.cos(a)*rad+tilt*Math.sin(a)*rad,canopyY+Math.sin(a)*rad*.43,
+     ux+Math.cos(a)*rad+tilt*Math.sin(a)*rad+rr(-2,2),canopyY+Math.sin(a)*rad*.43+rr(-1,1),
+     stripes[Math.floor(a/(2*Math.PI)*panels)%2],rr(1.2,2.8)*sc);
+  }
+ }
+ person(x,y,sc,pose,selected.variant,selected.flip)
+}
+
+// Extra losse strandgangers tussen de bestaande groepjes: geen extra handdoeken
+// of parasols. Controleer voeten, volledige figuur en afstand tot palmen.
+const extraPeople=$('crowd').value==='quiet'?5:$('crowd').value==='busy'?30:17;
+for(let i=0;i<extraPeople;i++){
+ let placed=false;
+ for(let attempt=0;attempt<850;attempt++){
+  const x=rr(45,955), y=rr(Math.max(shore+90,810),974);
+  const sc=.48+(y-shore)/(1000-shore)*.43;
+  const selected=uniquePose();if(!selected)break;const pose=selected.type;
+  const rx=pose==='lying'?37*sc:22*sc;
+  const top=pose==='lying'?y-14*sc:y-57*sc;
+  const bottom=y+12*sc;
+  const rect={minX:x-rx-5,maxX:x+rx+5,minY:top-5,maxY:bottom+5};
+  const shoreline=shore+(x-500)*.035;
+  if(rect.minX<8||rect.maxX>992||rect.minY<shoreline+25||rect.maxY>990)continue;
+  if(palmZones.some(z=>rect.minX<z.maxX&&rect.maxX>z.minX&&rect.minY<z.maxY&&rect.maxY>z.minY))continue;
+  const radius=30*sc;
+  if(occupied.some(o=>Math.hypot(x-o.x,y-o.y)<radius+o.radius+9))continue;
+  occupied.push({x,y,radius});usedPoseKeys.add(selected.key);groundShadow(x,pose==='lying'?y+2*sc:y+7*sc,pose==='lying'?26*sc:11*sc,4*sc,.28,0);person(x,y,sc,pose,selected.variant,selected.flip);placed=true;break;
+ }
+}
+
+// Zwemmers: diepte-afhankelijke figuren zonder opgeheven vleugelarmen.
+// Geen rechte rijen: willekeurige plaatsen met onderlinge afstand.
+let swimmers=[];
+const swimCount=+$('swimmers').value, swimPlaces=[];
+// Controleer ALLE palmveren, ook boven zee, voordat een zwemmer wordt geplaatst.
+// Segmenten met een veiligheidsmarge voorkomen personen voor/in de bladerkroon.
+const palmSeaSegments=palms.flatMap(tree=>[
+ ...tree.leaves.map(v=>[v.x,v.y,v.ex,v.ey]),
+ ...tree.trunk.map(v=>[v.x,v.y,v.x+7,v.y+7])
+]);
+function nearPalmAtSea(x,y){
+ const padX=34,padY=43;
+ return palmSeaSegments.some(([x1,y1,x2,y2])=>{
+  const minX=Math.min(x1,x2)-padX,maxX=Math.max(x1,x2)+padX;
+  const minY=Math.min(y1,y2)-padY,maxY=Math.max(y1,y2)+padY;
+  return x>=minX&&x<=maxX&&y>=minY&&y<=maxY;
+ });
+}
+const swimSkins=[[82,48,37],[125,77,53],[171,109,76],[214,155,115],[240,197,157],[104,69,49]];
+const swimColors=[[231,75,71],[249,205,69],[64,128,193],[71,169,123],[178,98,174]];
+function seaStroke(x,y,ex,ey,color,w){swimmers.push({type:'life',x,y,ex,ey,color,w});}
+for(let k=0;k<swimCount;k++){
+ let x,y,found=false;
+ for(let attempt=0;attempt<160;attempt++){
+  x=rr(55,945);const edge=shore+(x-500)*.035;
+  y=rr(horizon+55,Math.max(horizon+70,edge-52));
+  if(!nearPalmAtSea(x,y)&&swimPlaces.every(q=>Math.hypot((q.x-x)*.75,(q.y-y)*1.7)>65)){found=true;break;}
+ }
+ if(!found)continue;
+ swimPlaces.push({x,y});
+ // Perspectief: aan de horizon miniatuur, richting kust geleidelijk groter.
+ const depth=Math.max(0,Math.min(1,(y-horizon)/Math.max(1,shore-horizon)));
+ const sc=(.28+depth*.64)*rr(.88,1.08),skin=pick(swimSkins),suit=pick(swimColors),hair=pick([[38,30,26],[93,56,35],[166,117,65]]);
+ const pose=rand();
+ // Hoofd en haar opgebouwd uit korte mierenstreken.
+ const headY=y-19*sc;
+ for(let j=0;j<95;j++){
+  const a=rr(0,Math.PI*2),rad=Math.sqrt(rand()),px=x+Math.cos(a)*7*sc*rad,py=headY+Math.sin(a)*9*sc*rad;
+  seaStroke(px,py,px+rr(-2,3)*sc,py+rr(-2,2)*sc,py<headY-4*sc?hair:skin,rr(1.5,3.8)*sc);
+ }
+ // Schouders en bovenlichaam, onderste helft verdwijnt onder golven.
+ for(let j=0;j<100;j++){
+  const yy=rr(y-9*sc,y+5*sc),xx=x+rr(-11,11)*sc;
+  seaStroke(xx,yy,xx+rr(-3,4)*sc,yy+rr(-1,3)*sc,yy>y-2*sc?suit:skin,rr(1.5,3.5)*sc);
+ }
+ if(false){ // vleugelarmen definitief uitgeschakeld
+  for(const sign of [-1,1])for(let j=0;j<42;j++){
+   const t=rand(),xx=x+sign*(9+17*t)*sc,yy=y-7*sc-10*Math.sin(t*Math.PI)*sc;
+   seaStroke(xx,yy,xx+sign*rr(1,5)*sc,yy-rr(0,3)*sc,skin,rr(1.5,3)*sc);
+  }
+ }else if(pose>.45){ // horizontale zwemarm
+  for(let j=0;j<55;j++){let xx=x+rr(-25,30)*sc,yy=y+rr(-2,3)*sc;seaStroke(xx,yy,xx+rr(2,7)*sc,yy,skin,rr(1.5,3)*sc)}
+ }
+ // Waterstrepen vóór de borst, om de figuur zichtbaar in zee te plaatsen.
+ for(let j=0;j<90;j++){
+  const xx=x+rr(-28,28)*sc,yy=y+rr(0,13)*sc;
+  seaStroke(xx,yy,xx+rr(5,17)*sc,yy+rr(-1,1),rand()<.24?[226,246,234]:mix(p.sea,[140,227,224],rr(.25,.75)),rr(.6,2.2));
+ }
+}
+// Meng penseelstreken binnen elke objectlaag: alle bomen en mensen groeien gelijktijdig.
+// Fisher-Yates: behoudt exact dezelfde verfstreken, maar voorkomt object-per-object opbouw.
+function shuffleMarks(items){for(let i=items.length-1;i>0;i--){const j=Math.floor(rand()*(i+1));[items[i],items[j]]=[items[j],items[i]];}return items;}
+layers=[sky,sun,sea,sand,detail,shadows,shuffleMarks(palms.flatMap(a=>a.trunk.map(v=>({...v,type:'trunk'})))),shuffleMarks(palms.flatMap(a=>a.leaves.map(v=>({...v,type:'leaf'})))),shuffleMarks(life),shuffleMarks(swimmers),makeEmmaSignature()];layer=0;done=0;painted=0;totalMarks=layers.reduce((n,a)=>n+a.length,0);running=false;ax.clearRect(0,0,1000,1000);// Het doek blijft leeg totdat Schilder wordt ingedrukt.
+$('status').textContent='Nieuwe compositie klaar — druk op Schilder';}
+function makeEmmaSignature(){
+ const surface=document.createElement('canvas');surface.width=370;surface.height=72;
+ const ink=surface.getContext('2d');ink.font='italic 43px cursive';
+ ink.fillStyle='#111';ink.fillText('Emma Renier',8,52);
+ const data=ink.getImageData(0,0,370,72).data;
+ const dots=[];
+ for(let y=0;y<72;y+=3)for(let x=0;x<370;x+=3){
+  if(data[(y*370+x)*4+3]>90)dots.push({type:'emma-signature',x:590+x,y:910+y});
+ }
+ return dots;
+}
+function paint(o,li){if(o.type==='emma-signature'){ctx.fillStyle='rgba(30,33,43,.94)';ctx.fillRect(o.x,o.y,3,3);return;}if(o.type==='facet'){ctx.save();ctx.beginPath();ctx.moveTo(...o.points[0]);for(let i=1;i<o.points.length;i++)ctx.lineTo(...o.points[i]);ctx.closePath();ctx.fillStyle=rgb(o.color,o.alpha);ctx.fill();if(o.outline){ctx.strokeStyle='rgba(32,40,52,.37)';ctx.lineWidth=rr(.8,2.3);ctx.stroke()}ctx.restore();return;}if(o.type==='slash'){ctx.strokeStyle=rgb(o.color,.6);ctx.lineWidth=o.w;ctx.beginPath();ctx.moveTo(o.x,o.y);ctx.lineTo(o.ex,o.ey);ctx.stroke();return;}if(o.abstractMark){ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.a);ctx.fillStyle=rgb(o.color,rr(.55,.93));ctx.fillRect(-o.w/2,-rr(2,6),o.w,rr(4,15));ctx.restore();return;}if(o.type==='expressionistSea'){
+ ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.a);
+ ctx.lineCap='square';ctx.strokeStyle=rgb(o.color,rr(.68,.96));
+ ctx.lineWidth=rr(3.5,9.5);ctx.beginPath();ctx.moveTo(-o.w/2,0);
+ ctx.lineTo(o.w/2,rr(-2,2));ctx.stroke();ctx.restore();return;
+ }if(o.type==='shadow'){ctx.strokeStyle=`rgba(77,64,55,${o.alpha})`;ctx.lineWidth=o.w;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(o.x,o.y);ctx.lineTo(o.ex,o.ey);ctx.stroke();return}if(o.type==='sunbrush'){ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.a);ctx.fillStyle=rgb(o.color,o.alpha);if(scene.style==='cubist'){ctx.beginPath();ctx.moveTo(-o.w/2,-5);ctx.lineTo(o.w/2,-rr(3,12));ctx.lineTo(o.w/2+rr(0,9),rr(4,12));ctx.lineTo(-o.w/2,rr(1,9));ctx.closePath();ctx.fill()}else ctx.fillRect(-o.w/2,-rr(2,4),o.w,rr(3,8));ctx.restore();return}if(o.type==='life'){ctx.strokeStyle=rgb(o.color,rr(.62,.94));ctx.lineWidth=Math.max(.8,o.w);ctx.lineCap='round';ctx.beginPath();ctx.moveTo(o.x,o.y);ctx.lineTo(o.ex,o.ey);ctx.stroke();return}let s=scene.style,sz=s==='real'?rr(1.2,3.2):s==='impr'?rr(3,8):s==='expr'?rr(5,13):rr(6,18);if(li===6&&s!=='cubist'){ctx.strokeStyle=rgb(pick([[52,43,31],[92,61,37],[136,95,49],[47,50,34],[166,124,65]]),rr(.58,.94));ctx.lineWidth=o.w;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(o.x-o.w*.4,o.y+rr(3,12));ctx.lineTo(o.x+o.w*.4,o.y-rr(3,12));ctx.stroke();return}
+ if(li===7&&s!=='cubist'){ctx.strokeStyle=rgb(o.shade<.25?[17,72,54]:o.shade<.5?[30,101,62]:o.shade<.75?[58,124,66]:[116,145,70],rr(.7,.95));ctx.lineWidth=o.w;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(o.x,o.y);ctx.quadraticCurveTo((o.x+o.ex)/2+rr(-4,4),(o.y+o.ey)/2-rr(2,7),o.ex,o.ey);ctx.stroke();return}
+ ctx.fillStyle=rgb(o.color,li===1?.9:.83);if(li===4){ctx.fillRect(o.x,o.y,o.w,rr(1,3));return}if(s==='cubist'&&(li===0||li===2||li===3)){const intensity=+$('cubism').value;const size=(li===0?25:li===2?18:23)*(intensity===1?.7:intensity===3?1.55:1);let x=o.x,y=o.y;const h=scene.horizon,edge=scene.shore+(x-500)*.035;if((li===0&&y>h-size)||(li===2&&(y<h+size||y>edge-size))||(li===3&&y<edge+size))return;ctx.save();ctx.translate(x,y);ctx.rotate(rr(-1.2,1.2));ctx.beginPath();ctx.moveTo(-size*.5,-size*.4);ctx.lineTo(size*rr(.3,.8),-size*.55);ctx.lineTo(size*.7,size*.25);ctx.lineTo(-size*.15,size*.65);ctx.closePath();ctx.fillStyle=rgb(o.color,rr(.15,.4));ctx.fill();if(rand()<.16*intensity){ctx.strokeStyle=rgb([35,56,73],.12);ctx.lineWidth=rr(.5,2);ctx.stroke()}ctx.restore();return}if(s==='cubist'&&(li===6||li===7)){ctx.strokeStyle=li===6?rgb(pick([[70,52,48],[132,94,55],[51,66,61]]),.8):rgb(pick([[17,72,54],[52,116,68],[148,159,74]]),.85);ctx.lineWidth=Math.max(3,o.w*(+$('cubism').value===3?1.5:1));ctx.lineCap='butt';ctx.beginPath();ctx.moveTo(o.x,o.y);ctx.lineTo(o.ex??o.x+rr(-8,8),o.ey??o.y+rr(-8,8));ctx.stroke();return}if(s==='cubist'&&li===8){ctx.strokeStyle=rgb(o.color,.87);ctx.lineWidth=Math.max(3,o.w*(+$('cubism').value===3?1.7:1.2));ctx.lineCap='square';ctx.beginPath();ctx.moveTo(o.x,o.y);ctx.lineTo(o.ex,o.ey);ctx.stroke();return}if(s==='real'&&li===2){ctx.strokeStyle=rgb(o.color,.88);ctx.lineWidth=rr(2.5,5.5);ctx.lineCap='round';ctx.beginPath();ctx.moveTo(o.x,o.y);ctx.quadraticCurveTo(o.x+o.w*.55,o.y-rr(0,1.8),o.x+o.w*rr(.8,2.3),o.y+rr(-.8,.8));ctx.stroke();ctx.restore()}else if(s==='real'&&li===0){ctx.fillStyle=rgb(o.color,.95);ctx.fillRect(o.x,o.y,rr(5,10),rr(5,10))}else if(s==='expr'&&(li===0||li===3)){ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.a);ctx.fillStyle=rgb(o.color,rr(.55,.9));ctx.fillRect(-o.w/2,-rr(2,5),o.w,rr(5,12));ctx.restore()}else if(s==='real'){ctx.fillRect(o.x,o.y,sz,sz)}else{ctx.save();ctx.translate(o.x,o.y);ctx.rotate(s==='expr'?rr(-1,1):rr(-.25,.25));ctx.fillRect(-sz/2,-sz/3,sz*(s==='abstract'?1.7:1),sz*.55);ctx.restore()}}
+function drawAnts(){ax.clearRect(0,0,1000,1000);if(!$('showants').checked)return;const colors=['#00c9e8','#e942a2','#ffdc36','#252c32'];for(let i=0;i<4;i++){const a=antPos[i];ax.beginPath();ax.arc(a.x,a.y,6,0,Math.PI*2);ax.fillStyle=colors[i];ax.fill();ax.lineWidth=1.5;ax.strokeStyle='rgba(255,255,255,.85)';ax.stroke();}}
+let previousFrame=0, layerCredit=0;
+function tick(now=performance.now()){if(!running)return;
+const dt=previousFrame?Math.min(.1,(now-previousFrame)/1000):1/60;previousFrame=now;
+// De achtergrond volgt de stappenschuiver; bomen en mensen krijgen een eigen rustige opbouwtijd.
+// Objectlagen krijgen bewust meer schildertijd dan de achtergrond.
+// Ook bij 50.000 stappen/s ontstaan stammen, bladeren en strandgangers geleidelijk.
+const durations={6:14,7:18,8:24,9:18};
+let budget;
+if(layer>=6 && layer<=9){
+  const duration=durations[layer]*Math.pow(30000/(+$('speed').value),.35);
+  layerCredit+=layers[layer].length*dt/duration;
+  budget=Math.floor(layerCredit);layerCredit-=budget;
+}else{budget=Math.max(1,Math.round(+$('speed').value*dt));layerCredit=0;}
+let paintedNow=0;
+while(budget>0&&layer<layers.length){let arr=layers[layer],n=Math.min(budget,arr.length-done);for(let i=0;i<n;i++){let o=arr[done+i];paint(o,layer);const ant=(painted+i)%4;let a=antPos[ant];a.a=Math.atan2(o.ey===undefined?0:o.ey-o.y,o.ex===undefined?1:o.ex-o.x);a.x=o.x;a.y=o.y;}done+=n;painted+=n;paintedNow+=n;budget-=n;if(done>=arr.length){layer++;done=0;layerCredit=0;break}}
+drawAnts();$('progress').textContent=Math.floor(100*painted/totalMarks)+'%';$('status').textContent=layer>=layers.length?'Schilderij voltooid':`Laag ${layer+1} van ${layers.length} — vier mieren schilderen`;
+if(layer>=layers.length){running=false;ax.clearRect(0,0,1000,1000);return}raf=requestAnimationFrame(tick)}
+// Geen voorgeschilderde achtergrond: elke kleur ontstaat uitsluitend via paint().
+function beginPainting(){}
+$('start').onclick=()=>{if(layer>=layers.length)build();if(!running){beginPainting();running=true;previousFrame=0;tick()}};$('pause').onclick=()=>{running=false;cancelAnimationFrame(raf)};$('new').onclick=()=>{build();beginPainting();running=true;previousFrame=0;tick()};$('save').onclick=()=>{let a=document.createElement('a');a.href=c.toDataURL('image/png');a.download='tropical-ants-teekay-omnia.png';a.click()};$('showants').onchange=drawAnts;$('speed').oninput=()=>$('sout').textContent=$('speed').value;$('palms').oninput=()=>$('pout').textContent=$('palms').value;$('style').onchange=()=>{switchStudio();};$('cubism').onchange=build;$('time').onchange=build;$('crowd').onchange=build;$('swimmers').oninput=()=>{$('swout').textContent=$('swimmers').value;};$('swimmers').onchange=build;
+const picassoHTML = "<!doctype html><html lang=\"nl\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Picasso Kubisme – Proefatelier</title><style>body{margin:0;background:#171b26;color:#f5f0df;font:15px system-ui}main{max-width:1050px;margin:auto;padding:18px}h1{margin:0 0 5px}p{color:#c8c9d1}canvas{width:100%;aspect-ratio:4/3;background:#ffffff;border-radius:10px}section{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:12px 0}button,select{background:#35445c;color:white;border:1px solid #72809b;border-radius:8px;padding:10px;cursor:pointer}label{display:flex;align-items:center;gap:8px}input{accent-color:#f0bf4e}small{color:#c8c9d1}</style></head><body><main><h1>Picasso • Kubistische schildermotor</h1><p>Picasso-studie met sterk wisselende geometrische composities, soms zonder palmen, parasols of figuren. Geometrische constructie met meerdere gezichtspunten, geen expressionistisch filter.</p><section><button id=\"start\">▶ Start</button><button id=\"new\">↻ Nieuwe afbeelding</button><button id=\"pause\">Pauze</button><button id=\"save\">PNG opslaan</button><label>Schilderstappen <input id=\"speed\" type=\"range\" min=\"3000\" max=\"50000\" value=\"15000\" step=\"1000\"><output id=\"speedOut\">15000</output></label><label><input id=\"dots\" type=\"checkbox\" checked> CMYK-bolletjes</label></section><canvas id=\"art\" width=\"1000\" height=\"750\"></canvas><small id=\"status\">De geometrische vlakken worden door vier bolletjes geleidelijk gevuld.</small><p>Teekay &amp; Omnia · 2026 — experimentele kubistische motor</p></main><script>\nconst canvas=document.getElementById('art'),ctx=canvas.getContext('2d'),W=1000,H=750;const layer=document.createElement('canvas');layer.width=W;layer.height=H;const pen=layer.getContext('2d');const speed=document.getElementById('speed'),status=document.getElementById('status');let seed=1,shapes=[],work=[],index=0,paused=true,markers=[];const colors=['#13a9c4','#cf317d','#f5c52d','#20222d'];function rand(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296}function pick(a){return a[Math.floor(rand()*a.length)]}function poly(points,color,outline='#272637'){shapes.push({points,color,outline})}function rect(x,y,w,h,c){poly([[x,y],[x+w,y],[x+w,y+h],[x,y+h]],c)}function ellipse(cx,cy,rx,ry,c,n=12){let pts=[];for(let i=0;i<n;i++){let a=i/n*Math.PI*2;pts.push([cx+Math.cos(a)*rx,cy+Math.sin(a)*ry])}poly(pts,c)}\nfunction figure(x,y,s,flip){const X=(a)=>x+a*s*(flip?-1:1),Y=(a)=>y+a*s;let skin=pick(['#e9b583','#98604d','#c57c54','#543e37','#df9a71']);poly([[X(-24),Y(-95)],[X(14),Y(-103)],[X(38),Y(-55)],[X(-15),Y(-48)]],pick(['#ed7349','#385c99','#eac045','#b44d65']));poly([[X(-15),Y(-48)],[X(38),Y(-55)],[X(26),Y(4)],[X(0),Y(-8)]],pick(['#3e6f91','#efbd4c','#a94459']));poly([[X(-15),Y(-48)],[X(0),Y(-8)],[X(-34),Y(7)]],pick(['#b9b2a1','#eab64a','#3b8d88']));poly([[X(0),Y(-8)],[X(26),Y(4)],[X(33),Y(85)],[X(10),Y(86)]],skin);poly([[X(-34),Y(7)],[X(0),Y(-8)],[X(-8),Y(82)],[X(-32),Y(82)]],skin);poly([[X(-24),Y(-88)],[X(-50),Y(-34)],[X(-37),Y(-19)],[X(3),Y(-69)]],skin);poly([[X(19),Y(-91)],[X(55),Y(-45)],[X(45),Y(-27)],[X(0),Y(-68)]],skin); // profile and frontal facial planes\npoly([[X(-21),Y(-165)],[X(12),Y(-177)],[X(33),Y(-142)],[X(13),Y(-113)],[X(-20),Y(-124)]],skin);poly([[X(12),Y(-177)],[X(33),Y(-142)],[X(13),Y(-113)],[X(5),Y(-141)]],pick(['#dd8a58','#744b43','#efc38a']));poly([[X(5),Y(-145)],[X(43),Y(-137)],[X(11),Y(-128)]],'#c97955');ellipse(X(-8),Y(-146),5*s,3*s,'#1b2937',6);ellipse(X(20),Y(-147),5*s,3*s,'#1b2937',6);poly([[X(-26),Y(-168)],[X(8),Y(-186)],[X(27),Y(-170)],[X(5),Y(-160)]],'#242733')}\nfunction create(){seed=(crypto.getRandomValues(new Uint32Array(1))[0] ^ (Date.now()>>>0))>>>0;shapes=[];work=[];index=0;pen.clearRect(0,0,W,H);rect(0,0,W,H,'#ebd9b2'); // construct fragmented pictorial space\nconst facetCount=12+Math.floor(rand()*40);for(let i=0;i<facetCount;i++){let x=rand()*W,y=rand()*H,sz=55+rand()*320;poly([[x,y],[x+sz*(.6+rand()),y-45-rand()*100],[x+sz,y+sz*.45],[x+sz*.25,y+sz]],pick(['#f1c75e','#ed8c59','#6c96a0','#d9a7a0','#e7d4a8','#a3b0a0','#587a8e','#f0b98d']))}\n// Every composition chooses a different spatial arrangement and focal point.\nconst layout=Math.floor(rand()*7), palette=pick([\n ['#1e655a','#3f8972','#8a9a59','#e0c15a','#29535b'],\n ['#274d8c','#65a2a4','#b4a469','#d56856','#343a65'],\n ['#76517e','#bc695b','#e0ad55','#4b8587','#324d54']]);\nconst palmCount=pick([0,1,1,2,2,3]);\nconst palms=[];\nfor(let palm=0;palm<palmCount;palm++){\n const side=(layout+palm)%3;\n let bx=side===0?65+rand()*220:side===1?700+rand()*230:260+rand()*500;\n let by=590+rand()*160,tx=bx+(rand()-.5)*280,ty=90+rand()*240;\n const scale=.62+rand()*.72;\n palms.push([bx,by]);\n for(let i=0;i<7;i++){\n  let a=i/7,b=(i+1)/7,x1=bx+(tx-bx)*a,x2=bx+(tx-bx)*b,y1=by+(ty-by)*a,y2=by+(ty-by)*b,w=25*scale;\n  poly([[x1-w,y1],[x1+w,y1-9],[x2+w*.8,y2],[x2-w*.8,y2+11]],pick(['#604d3e','#ac7550','#e0a25e','#3d4c4a']));\n  poly([[x1+5*scale,y1-5],[x1+w,y1-9],[x2+w*.8,y2],[x2+2*scale,y2+8]],'#3d4647');\n }\n const leaves=7+Math.floor(rand()*8),rotation=rand()*Math.PI*2;\n for(let i=0;i<leaves;i++){\n  let a=rotation+i*Math.PI*2/leaves,reach=(105+rand()*135)*scale,ex=tx+Math.cos(a)*reach,ey=ty+Math.sin(a)*reach*.55+45*scale;\n  poly([[tx-12*scale,ty],[tx+16*scale,ty-8],[ex,ey],[tx+Math.cos(a)*60*scale,ty+Math.sin(a)*38*scale+28]],pick(palette));\n  poly([[tx+Math.cos(a)*45*scale,ty+Math.sin(a)*20*scale],[ex,ey],[tx+Math.cos(a)*95*scale,ty+Math.sin(a)*75*scale+45]],pick(palette));\n }\n}\n// Some compositions have no umbrella, others one or two, at variable positions and scales.\nconst umbrellaCount=pick([0,0,1,1,1,2]);\nconst umbrellas=[];\nfor(let u=0;u<umbrellaCount;u++){\n let ux=120+rand()*760,uy=280+rand()*270,us=.48+rand()*.72;\n if(umbrellas.some(p=>Math.abs(ux-p[0])<190))ux=100+rand()*800;\n umbrellas.push([ux,uy]);\n poly([[ux-12*us,uy-6*us],[ux+3*us,uy-8*us],[ux+14*us,uy+230*us],[ux-1*us,uy+230*us]],'#313a43');\n let umbrella=[[-165,0],[-90,-84],[0,-116],[105,-80],[170,0],[75,42],[-70,35]].map(([a,b])=>[ux+a*us,uy+b*us]);\n const stripes=pick([['#e9b84e','#d85250','#4a9ba4'],['#72558e','#f3e1a8','#284f76'],['#e67e54','#4c8c72','#ead49d']]);\n for(let i=0;i<umbrella.length;i++)poly([[ux,uy-34*us],umbrella[i],umbrella[(i+1)%umbrella.length]],stripes[i%stripes.length]);\n ellipse(ux,uy-40*us,45*us,26*us,pick(stripes),8);\n poly([[ux-175*us,uy+3*us],[ux+160*us,uy+10*us],[ux+75*us,uy+54*us],[ux-65*us,uy+43*us]],'#cf7659');\n}\n// Varied number, scale, orientation and placement of figures; sometimes none.\nconst nPeople=pick([0,1,2,3,4,5,6]);const positions=[];\nfor(let i=0;i<nPeople;i++){\n let px,py,attempt=0;\n do{\n  px=90+rand()*820;py=430+rand()*255;attempt++;\n }while(attempt<120&&(positions.some(p=>Math.hypot(px-p[0],py-p[1])<115)||palms.some(p=>Math.hypot(px-p[0],py-p[1])<85)||umbrellas.some(p=>Math.hypot(px-p[0],py-p[1])<100)));\n positions.push([px,py]);figure(px,py,.35+rand()*.8,rand()>.5);\n}\n// construct many small painting operations inside each polygon, globally interleaved\nshapes.forEach((sh,id)=>{let xs=sh.points.map(p=>p[0]),ys=sh.points.map(p=>p[1]),minx=Math.max(0,Math.min(...xs)),maxx=Math.min(W,Math.max(...xs)),miny=Math.max(0,Math.min(...ys)),maxy=Math.min(H,Math.max(...ys));let area=Math.max(0,(maxx-minx)*(maxy-miny));let count=Math.max(12,Math.ceil(area/140));for(let j=0;j<count;j++){work.push({id,x:minx+rand()*(maxx-minx),y:miny+rand()*(maxy-miny)})}});for(let i=work.length-1;i>0;i--){let j=Math.floor(rand()*(i+1));[work[i],work[j]]=[work[j],work[i]]}markers=colors.map((c,i)=>({x:500+i*15,y:400,c}));status.textContent=`Nieuwe afbeelding klaar · druk op Start (${shapes.length} vlakken)`;}\nfunction inside(x,y,pts){let yes=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){let a=pts[i],b=pts[j];if((a[1]>y)!=(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])yes=!yes}return yes}\nfunction frame(){if(!paused){let batch=Math.max(20,Math.round(+speed.value/65));for(let k=0;k<batch&&index<work.length;k++,index++){let w=work[index],sh=shapes[w.id];if(!inside(w.x,w.y,sh.points))continue;pen.save();pen.beginPath();sh.points.forEach(([x,y],i)=>i?pen.lineTo(x,y):pen.moveTo(x,y));pen.closePath();pen.clip();pen.fillStyle=sh.color;pen.fillRect(w.x-7,w.y-7,14,14);pen.restore();let m=markers[index%4];m.x=w.x;m.y=w.y}if(index>=work.length){ // finish edges and close tiny gaps inside geometric polygons\nshapes.forEach(sh=>{pen.beginPath();sh.points.forEach(([x,y],i)=>i?pen.lineTo(x,y):pen.moveTo(x,y));pen.closePath();pen.fillStyle=sh.color;pen.globalAlpha=.35;pen.fill();pen.globalAlpha=1;pen.strokeStyle=sh.outline;pen.lineWidth=3;pen.stroke()});pen.save();pen.font='italic 39px cursive';pen.fillStyle='#202333';pen.textAlign='right';pen.fillText('Emma Renier',965,720);pen.restore();paused=true;document.getElementById('pause').textContent='Opnieuw afspelen'}status.textContent=`${shapes.length} geometrische vlakken · ${Math.min(100,Math.round(index/work.length*100))}% geschilderd`}\nctx.clearRect(0,0,W,H);ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W,H);ctx.drawImage(layer,0,0);if(document.getElementById('dots').checked&&index>0&&index<work.length){markers.forEach(m=>{ctx.beginPath();ctx.arc(m.x,m.y,5,0,Math.PI*2);ctx.fillStyle=m.c;ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke()})}requestAnimationFrame(frame)}document.getElementById('start').onclick=()=>{if(index>=work.length)create();paused=false;document.getElementById('pause').textContent='Pauze';status.textContent='Schilderen gestart';};document.getElementById('new').onclick=()=>{paused=true;document.getElementById('pause').textContent='Pauze';create()};document.getElementById('pause').onclick=()=>{if(index>=work.length){paused=true;create()}else if(index>0)paused=!paused;document.getElementById('pause').textContent=paused?'Hervatten':'Pauze'};document.getElementById('save').onclick=()=>{let a=document.createElement('a');a.download='picasso-kubisme-proefatelier.png';a.href=canvas.toDataURL('image/png');a.click()};speed.oninput=()=>document.getElementById('speedOut').textContent=speed.value;create();frame();<\/script></body></html>\n";
+function switchStudio(){
+ const cub=$('style').value==='cubist';
+ $('picasso-wrap').style.display=cub?'block':'none';
+ $('original-canvas-wrap').style.display=cub?'none':'block';
+ $('original-actions').style.display=cub?'none':'flex';
+ $('original-ants-control').style.display=cub?'none':'flex';
+ $('cubism-control').style.display='none';
+ for(const id of ['time','palms','crowd','swimmers','speed']){
+   const e=$(id);if(e&&e.closest('label'))e.closest('label').style.display=cub?'none':'flex';
+ }
+ if(cub){running=false;cancelAnimationFrame(raf);if(!$('picasso-frame').srcdoc)$('picasso-frame').srcdoc=picassoHTML;}
+ else build();
+}
+switchStudio();
+</script></body></html>
