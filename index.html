@@ -440,16 +440,16 @@ layers=[sky,sun,sea,sand,detail,shadows,shuffleMarks(palms.flatMap(a=>a.trunk.ma
 $('status').textContent='Nieuwe compositie klaar — druk op Schilder';}
 function makeEmmaSignature(){
  const surface=document.createElement('canvas');surface.width=370;surface.height=72;
- const ink=surface.getContext('2d');ink.font='italic 43px cursive';
+ const ink=surface.getContext('2d');ink.font='bold 38px Arial, sans-serif';
  ink.fillStyle='#111';ink.fillText('Emma Renier',8,52);
  const data=ink.getImageData(0,0,370,72).data;
  const dots=[];
- for(let y=0;y<72;y+=3)for(let x=0;x<370;x+=3){
+ for(let y=0;y<72;y+=2)for(let x=0;x<370;x+=2){
   if(data[(y*370+x)*4+3]>90)dots.push({type:'emma-signature',x:590+x,y:910+y});
  }
  return dots;
 }
-function paint(o,li){if(o.type==='emma-signature'){ctx.fillStyle='rgba(30,33,43,.94)';ctx.fillRect(o.x,o.y,3,3);return;}if(o.type==='facet'){ctx.save();ctx.beginPath();ctx.moveTo(...o.points[0]);for(let i=1;i<o.points.length;i++)ctx.lineTo(...o.points[i]);ctx.closePath();ctx.fillStyle=rgb(o.color,o.alpha);ctx.fill();if(o.outline){ctx.strokeStyle='rgba(32,40,52,.37)';ctx.lineWidth=rr(.8,2.3);ctx.stroke()}ctx.restore();return;}if(o.type==='slash'){ctx.strokeStyle=rgb(o.color,.6);ctx.lineWidth=o.w;ctx.beginPath();ctx.moveTo(o.x,o.y);ctx.lineTo(o.ex,o.ey);ctx.stroke();return;}if(o.abstractMark){ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.a);ctx.fillStyle=rgb(o.color,rr(.55,.93));ctx.fillRect(-o.w/2,-rr(2,6),o.w,rr(4,15));ctx.restore();return;}if(o.type==='expressionistSea'){
+function paint(o,li){if(o.type==='emma-signature'){ctx.fillStyle='rgba(30,33,43,.94)';ctx.fillRect(o.x,o.y,2,2);return;}if(o.type==='facet'){ctx.save();ctx.beginPath();ctx.moveTo(...o.points[0]);for(let i=1;i<o.points.length;i++)ctx.lineTo(...o.points[i]);ctx.closePath();ctx.fillStyle=rgb(o.color,o.alpha);ctx.fill();if(o.outline){ctx.strokeStyle='rgba(32,40,52,.37)';ctx.lineWidth=rr(.8,2.3);ctx.stroke()}ctx.restore();return;}if(o.type==='slash'){ctx.strokeStyle=rgb(o.color,.6);ctx.lineWidth=o.w;ctx.beginPath();ctx.moveTo(o.x,o.y);ctx.lineTo(o.ex,o.ey);ctx.stroke();return;}if(o.abstractMark){ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.a);ctx.fillStyle=rgb(o.color,rr(.55,.93));ctx.fillRect(-o.w/2,-rr(2,6),o.w,rr(4,15));ctx.restore();return;}if(o.type==='expressionistSea'){
  ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.a);
  ctx.lineCap='square';ctx.strokeStyle=rgb(o.color,rr(.68,.96));
  ctx.lineWidth=rr(3.5,9.5);ctx.beginPath();ctx.moveTo(-o.w/2,0);
