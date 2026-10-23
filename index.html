@@ -166,6 +166,24 @@ function groundShadow(x,y,rx,ry,alpha=.24,height=0){
   shadowMark(px,py,alpha*(1-rad*.7),rr(2,6));
  }
 }
+// Contactschaduw direct onder de werkelijke voeten of het liggende lichaam.
+// Geen los ovaal onder de figuur: twee kleine voetafdrukken volgen de pose.
+function personContactShadow(x,y,sc,pose,variant,flip){
+ if(pose==='lying'){
+  groundShadow(x,y+2*sc,23*sc,2.3*sc,.19,0);
+ }else if(pose==='sitting'){
+  groundShadow(x+flip*7*sc,y+5*sc,14*sc,2.5*sc,.19,0);
+ }else{
+  const walk=pose==='walking';
+  const feet=walk?[
+    [[-16,7],[14,6]], [[-5,8],[20,4]], [[-19,5],[11,8]], [[-15,4],[17,7]]
+  ]:[
+    [[-6,8],[7,8]], [[-8,8],[9,7]], [[-10,7],[10,8]], [[-12,7],[6,8]]
+  ];
+  for(const [fx,fy] of feet[variant%4])
+   groundShadow(x+flip*(fx+2)*sc,y+(fy+.5)*sc,4.5*sc,1.7*sc,.23,0);
+ }
+}
 for(const tree of palms){
  const foot=tree.trunk.reduce((best,v)=>!best||v.t<best.t?v:best,null);
  const bx=foot?.x??500,by=foot?.y??950;
@@ -357,7 +375,7 @@ for(let i=0;i<nPeople;i++){
  }
  if(!found)continue;
  const selected=uniquePose();if(!selected)continue;let pose=selected.type;
- usedPoseKeys.add(selected.key);groundShadow(x,pose==='lying'?y+2*sc:y+7*sc,pose==='lying'?27*sc:11*sc,pose==='lying'?4*sc:5*sc,.28,0);
+ usedPoseKeys.add(selected.key);personContactShadow(x,y,sc,pose,selected.variant,selected.flip);
  if(i%2===0 || i<3){
   // Een duidelijke rechthoekige handdoek in perspectief, met gestreepte stof.
   let tw=rr(57,77)*sc,th=rr(24,35)*sc,col=pick(towelColors),cx=x,cy=y+11*sc;
@@ -420,7 +438,7 @@ for(let i=0;i<extraPeople;i++){
   if(palmZones.some(z=>rect.minX<z.maxX&&rect.maxX>z.minX&&rect.minY<z.maxY&&rect.maxY>z.minY))continue;
   const radius=30*sc;
   if(occupied.some(o=>Math.hypot(x-o.x,y-o.y)<radius+o.radius+9))continue;
-  occupied.push({x,y,radius});usedPoseKeys.add(selected.key);groundShadow(x,pose==='lying'?y+2*sc:y+7*sc,pose==='lying'?26*sc:11*sc,4*sc,.28,0);person(x,y,sc,pose,selected.variant,selected.flip);placed=true;break;
+  occupied.push({x,y,radius});usedPoseKeys.add(selected.key);personContactShadow(x,y,sc,pose,selected.variant,selected.flip);person(x,y,sc,pose,selected.variant,selected.flip);placed=true;break;
  }
 }
 
